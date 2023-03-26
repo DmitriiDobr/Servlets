@@ -5,15 +5,16 @@ import ru.netology.model.Post;
 
 import java.util.*;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class PostRepository {
 
-    private final List<Post> repositoryStorage = Collections.synchronizedList(new ArrayList<>());
+    private final ConcurrentHashMap<Integer, Post> repositoryStorage = new ConcurrentHashMap<>();
     private final AtomicInteger counter = new AtomicInteger(0);
 
-    public List<Post> all() {
-        return repositoryStorage;
+    public Collection<Post> all() {
+        return repositoryStorage.values();
     }
 
     public Optional<Post> getById(Integer id) {
@@ -24,17 +25,17 @@ public class PostRepository {
     ;
 
     public Post save(Post post) {
+        System.out.println("nanan");
         if (post.getId() == 0) {
             post.setId(counter.get());
+            repositoryStorage.put(counter.get(), post);
             counter.addAndGet(1);
-            repositoryStorage.add(post);
-
             return post;
 
         } else {
-            Post p = findPostById(post.getId());
+            Post p = repositoryStorage.get(post.getId());
             if (p != null) {
-                repositoryStorage.set(repositoryStorage.indexOf(p), post);
+                repositoryStorage.replace(post.getId(), p);
             }
             return p;
         }
@@ -43,18 +44,12 @@ public class PostRepository {
     }
 
     public boolean removeById(Integer id) {
-        Post p = findPostById(id);
-        if (p != null) {
-            repositoryStorage.remove(p);
+        if (id != null) {
+            repositoryStorage.remove(id);
             return true;
         }
         return false;
     }
 
-    private Post findPostById(Integer id) {
-        return repositoryStorage.stream()
-                .filter(p -> p.getId().equals(id))
-                .findFirst()
-                .orElse(null);
-    }
+
 }
